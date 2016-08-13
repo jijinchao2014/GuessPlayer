@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@mipmap/index_bar"
+                android:padding="8dp">
+
+    <Button
+        android:id="@+id/btn_back"
+        android:layout_width="60dp"
+        android:layout_height="38dp"
+        android:layout_centerVertical="true"
+        android:background="@drawable/selector_btn_back"/>
+
+    <CheckedTextView
+        android:id="@+id/tv_score"
+        android:layout_width="wrap_content"
+        android:layout_height="38dp"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:background="@drawable/selector_btn_add"
+        android:drawableLeft="@mipmap/game_coin_icon"
+        android:drawablePadding="13dp"
+        android:gravity="center"
+        android:paddingLeft="50dp"
+        android:paddingRight="10dp"
+        android:text="1000"
+        android:textColor="@color/color_ffffff"
+        android:textStyle="bold"/>
+
+</RelativeLayout>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:padding="1dp"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content">
+    <TextView
+        android:id="@+id/tv_word"
+        android:gravity="center"
+        android:text=" "
+        android:textSize="22dp"
+        android:textStyle="bold"
+        android:includeFontPadding="false"
+        android:textColor="@color/color_ffffff"
+        android:background="@mipmap/game_wordblank"
+        android:layout_width="48dp"
+        android:layout_height="48dp"/>
+
+</LinearLayout>
