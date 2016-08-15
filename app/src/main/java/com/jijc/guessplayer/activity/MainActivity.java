@@ -15,6 +15,8 @@ import android.widget.Button;
 import android.widget.CheckedTextView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,7 +25,6 @@ import com.jijc.guessplayer.R;
 import com.jijc.guessplayer.bean.SongBean;
 import com.jijc.guessplayer.bean.Songs;
 import com.jijc.guessplayer.bean.WordBean;
-import com.jijc.guessplayer.listener.OnRecyclerViewItemClickListener;
 import com.jijc.guessplayer.utils.WordUtil;
 import com.nineoldandroids.animation.ArgbEvaluator;
 import com.nineoldandroids.animation.ObjectAnimator;
@@ -58,9 +59,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Animation mBarInAnim; //拨杆进入动画
     private Animation mBarOutAnim; //拨杆拨开动画
     private RecyclerView recyclerView; //待选文字区域
-    private RecyclerView llContainer; //已选文字区域
+    private RecyclerView selectedRecyclerView; //已选文字区域
     private MyAdapter adapter;  //待选文字
-    private MyAdapter adapter1; //已选文字
+    private MyAdapter selectedAdapter; //已选文字
+    private LinearLayout llSuccess;
+    private RelativeLayout rlDelete;
+    private RelativeLayout rlTip;
+    private TextView tvDelete;
+    private TextView tvTip;
+    private TextView tvShare;
+    private TextView tvLevel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,13 +78,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         initData();
 
         adapter = new MyAdapter(this, datas, 0);
-        adapter1 = new MyAdapter(this, selects, 1);
+        selectedAdapter = new MyAdapter(this, selects, 1);
         recyclerView.setAdapter(adapter);
-        llContainer.setAdapter(adapter1);
+        selectedRecyclerView.setAdapter(selectedAdapter);
 
         //设置布局
         recyclerView.setLayoutManager(new GridLayoutManager(this, 8));
-        llContainer.setLayoutManager(new GridLayoutManager(this, selected_word));
+        selectedRecyclerView.setLayoutManager(new GridLayoutManager(this, selected_word));
         //待选区域按钮点击事件
         adapter.setOnItemClickListener(new MyAdapter.OnItemClickListener() {
             @Override
@@ -90,7 +98,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     for (int i = 0; i < selected_word; i++) {
                         if (TextUtils.isEmpty(selects.get(i).wordText)) {
                             selects.get(i).wordText = datas.get(position).wordText;
-                            adapter1.notifyDataSetChanged();
+                            selectedAdapter.notifyDataSetChanged();
                             mapWord.put(i, datas.get(position));
                             fillNum++;
                             break;
@@ -107,6 +115,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             for (int i=0;i<selected_word;i++){
                                 selects.get(i).tvSelected.setTextColor(Color.GREEN);
                             }
+                            llSuccess.setVisibility(View.VISIBLE);
                             break;
                         case SONG_FAILL:
                             //校验失败已选文字闪烁，
@@ -138,7 +147,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
 
         //已选区域按钮点击事件
-        adapter1.setOnItemClickListener(new MyAdapter.OnItemClickListener() {
+        selectedAdapter.setOnItemClickListener(new MyAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(final View view, final int position) {
                 for (int i=0;i<selected_word;i++){
@@ -148,7 +157,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
 //                Toast.makeText(MainActivity.this, "你点击了" + datas.get(position) + ",position=" + position, Toast.LENGTH_SHORT).show();
                 selects.get(position).wordText = "";
-                adapter1.notifyDataSetChanged();
+                selectedAdapter.notifyDataSetChanged();
                 WordBean wordBean = mapWord.get(position);//已选框文字原来的位置
                 wordBean.isVisible = true;
                 adapter.notifyDataSetChanged();
@@ -173,10 +182,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         ivBar = (ImageView) findViewById(R.id.iv_bar);
         ivPan = (ImageView) findViewById(R.id.iv_pan);
         recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
-        llContainer = (RecyclerView) findViewById(R.id.ll_container);
+        selectedRecyclerView = (RecyclerView) findViewById(R.id.ll_container);
+        llSuccess = (LinearLayout) findViewById(R.id.ll_success);
+        rlDelete = (RelativeLayout) findViewById(R.id.rl_delete);
+        rlTip = (RelativeLayout) findViewById(R.id.rl_tip);
+        tvDelete = (TextView) findViewById(R.id.tv_delete);
+        tvTip = (TextView) findViewById(R.id.tv_tip);
+        tvShare = (TextView) findViewById(R.id.tv_share);
+        tvLevel = (TextView) findViewById(R.id.tv_level);
+
         tvScore.setOnClickListener(this);
         btnBack.setOnClickListener(this);
         btnPlay.setOnClickListener(this);
+        rlDelete.setOnClickListener(this);
+        rlTip.setOnClickListener(this);
+        tvShare.setOnClickListener(this);
     }
 
     /**
@@ -216,16 +236,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         int id = v.getId();
         switch (id) {
-            case R.id.btn_back:
+            case R.id.btn_back: //返回按键
                 finish();
                 break;
-            case R.id.btn_play:
+            case R.id.btn_play: //播放按钮
                 if (isStart) {
                     barOutAnim();
                 } else {
                     btnPlay.setVisibility(View.GONE);
                     barInAnim();
                 }
+                break;
+            case R.id.rl_delete: //删除待选文字
+                break;
+            case R.id.rl_tip: //提示
+                break;
+            case R.id.tv_share: //分享
                 break;
 
         }

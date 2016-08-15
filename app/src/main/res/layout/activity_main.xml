@@ -29,4 +29,6 @@
             android:layout_height="wrap_content"></android.support.v7.widget.RecyclerView>
         <include layout="@layout/select_bottom"/>
     </LinearLayout>
+    <include layout="@layout/float_item"/>
+    <include layout="@layout/success_item"/>
 </RelativeLayout>
