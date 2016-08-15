@@ -1,7 +1,7 @@
 package com.jijc.guessplayer.bean;
 
 /**
- * Description:
+ * Description:模拟数据库
  * Created by jijc on 2016/8/13.
  * PackageName: com.jijc.guessplayer.bean
  */

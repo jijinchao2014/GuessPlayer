@@ -3,7 +3,7 @@ package com.jijc.guessplayer.bean;
 import android.widget.TextView;
 
 /**
- * Description:
+ * Description:存储每个按钮的一些信息
  * Created by jijc on 2016/8/12.
  * PackageName: com.jijc.guessplayer.bean
  */

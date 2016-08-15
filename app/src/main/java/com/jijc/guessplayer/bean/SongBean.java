@@ -3,7 +3,7 @@ package com.jijc.guessplayer.bean;
 import android.text.TextUtils;
 
 /**
- * Description:
+ * Description:歌曲信息
  * Created by jijc on 2016/8/13.
  * PackageName: com.jijc.guessplayer.bean
  */
