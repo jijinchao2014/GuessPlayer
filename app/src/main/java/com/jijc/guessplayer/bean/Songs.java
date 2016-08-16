@@ -8,6 +8,7 @@ package com.jijc.guessplayer.bean;
 public class Songs {
     public static final int SONG_FILENAME=0;
     public static final int SONG_SONGNAME=1;
+    public static final int TOTAL_SCORE=1080;
     public static final String[][] SONGS=new String[][]{
             {"__00000.m4a", "征服"},
             {"__00001.m4a", "童话"},

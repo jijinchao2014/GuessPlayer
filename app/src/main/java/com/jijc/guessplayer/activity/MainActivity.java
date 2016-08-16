@@ -1,5 +1,7 @@
 package com.jijc.guessplayer.activity;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -31,8 +33,11 @@ import com.nineoldandroids.animation.ObjectAnimator;
 import com.nineoldandroids.animation.ValueAnimator;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
@@ -40,14 +45,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final int SONG_SUCCESS = 0; //校验成功
     private static final int SONG_FAILL = 1; //校验失败
     private static final int SONG_UNKNOW = 2; //答案为完成
+    private static final int DELETE_SUCCESS = 0; //删除成功
+    private static final int DELETE_FAILL = 1; //删除失败
+    private static final int TIP_SUCCESS = 0; //提示成功
+    private static final int TIP_FAILL = 1; //提示失败
     private int fillNum; //已经填充的数量
+    private int point;//已选框的指针（输入焦点所在的位置）
     private HashMap<Integer, WordBean> mapWord = new HashMap<>(); //存放已选区域的索引和待选区域的按钮以及对应关系
-    private int currentSongIndex;  //当前播放歌曲的索引，初始值0
+    private int currentSongIndex=2;  //当前播放歌曲的索引，初始值0
     private SongBean currentSong; //当前播放的歌曲
     private int selected_word; //答案的文字个数
     private boolean isStart;
     private List<WordBean> datas;//待选文字集合
     private List<WordBean> selects;//已选文字集合
+    private int totalScore=Songs.TOTAL_SCORE;
+    private int deleteScore;
+    private int tipScore;
+    private String[] words; //随机排好序的数组
 
     private CheckedTextView tvScore;
     private Button btnBack;
@@ -77,6 +91,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         initView();
         initData();
 
+        //设置各种金币数量
+        tvScore.setText(totalScore+"");
+        tvDelete.setText(deleteScore+"");
+        tvTip.setText(tipScore+"");
+
         adapter = new MyAdapter(this, datas, 0);
         selectedAdapter = new MyAdapter(this, selects, 1);
         recyclerView.setAdapter(adapter);
@@ -100,6 +119,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             selects.get(i).wordText = datas.get(position).wordText;
                             selectedAdapter.notifyDataSetChanged();
                             mapWord.put(i, datas.get(position));
+                            point=i+1;
                             fillNum++;
                             break;
                         }
@@ -107,37 +127,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 }
                     //进行歌曲校验
-                    int result=checkSong();
-                    switch (result){
-                        case SONG_SUCCESS:
-                            //校验成功跳转页面
-                            Toast.makeText(MainActivity.this, "恭喜你，奖励一头牛", Toast.LENGTH_SHORT).show();
-                            for (int i=0;i<selected_word;i++){
-                                selects.get(i).tvSelected.setTextColor(Color.GREEN);
-                            }
-                            llSuccess.setVisibility(View.VISIBLE);
-                            break;
-                        case SONG_FAILL:
-                            //校验失败已选文字闪烁，
-                            Toast.makeText(MainActivity.this, "Sorry，今晚你得吃一头牛", Toast.LENGTH_SHORT).show();
-                            for (int i=0;i<selected_word;i++){
-                                ValueAnimator colorAnim = ObjectAnimator.ofInt(selects.get(i).tvSelected, "textColor", Color.WHITE, Color.RED);
-                                colorAnim.setEvaluator(new ArgbEvaluator());
-                                colorAnim.setDuration(200);
-                                colorAnim.setRepeatCount(4);
-                                colorAnim.setRepeatMode(ValueAnimator.REVERSE);
-                                colorAnim.start();
-                            }
-
-                            break;
-                        case SONG_UNKNOW:
-                            //没有选择完成
-                            Toast.makeText(MainActivity.this, "还没填完，加油哦", Toast.LENGTH_SHORT).show();
-                            for (int i=0;i<selected_word;i++){
-                                selects.get(i).tvSelected.setTextColor(Color.WHITE);
-                            }
-                            break;
-                    }
+                validateSongs();
             }
 
             @Override
@@ -150,6 +140,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         selectedAdapter.setOnItemClickListener(new MyAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(final View view, final int position) {
+
                 for (int i=0;i<selected_word;i++){
                     if (selects.get(i).tvSelected!=null){
                         selects.get(i).tvSelected.setTextColor(Color.WHITE);
@@ -161,7 +152,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 WordBean wordBean = mapWord.get(position);//已选框文字原来的位置
                 wordBean.isVisible = true;
                 adapter.notifyDataSetChanged();
+                point=position;
                 fillNum--;
+                Log.i("jijinc", "---------------------fillNum=" + fillNum);
             }
 
             @Override
@@ -172,7 +165,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         initAnim();
     }
-
 
     private void initView() {
         tvScore = (CheckedTextView) findViewById(R.id.tv_score);
@@ -203,6 +195,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      * 初始化待选框和已选框文字
      */
     private void initData() {
+
+        deleteScore=getResources().getInteger(R.integer.score_delete);
+        tipScore=getResources().getInteger(R.integer.score_tip);
+
         currentSong = new SongBean();
         String[][] songs = Songs.SONGS;
         currentSong.fileName = songs[currentSongIndex][Songs.SONG_FILENAME];
@@ -210,7 +206,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //设置待选框个数
         selected_word = currentSong.getSongLength();
 
-        String[] words = WordUtil.generateWords(SELECTING_WORD, selected_word, currentSong);
+        words = WordUtil.generateWords(SELECTING_WORD, selected_word, currentSong);
         datas = new ArrayList<>();
         WordBean word = null;
         for (int i = 0; i < SELECTING_WORD; i++) {
@@ -230,6 +226,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             word1.isVisible = true;
             selects.add(word1);
         }
+
+    }
+
+    @Override
+    protected void onPause() {
+        if (ivPan != null) {
+            ivPan.clearAnimation();
+        }
+        super.onPause();
     }
 
     @Override
@@ -247,9 +252,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     barInAnim();
                 }
                 break;
+            case R.id.tv_score:
+                break;
             case R.id.rl_delete: //删除待选文字
+                handleDelOperate();
                 break;
             case R.id.rl_tip: //提示
+                handleTipOperate();
                 break;
             case R.id.tv_share: //分享
                 break;
@@ -257,12 +266,201 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    @Override
-    protected void onPause() {
-        if (ivPan != null) {
-            ivPan.clearAnimation();
+    /**
+     * 检查歌曲结果
+     */
+    private void validateSongs() {
+        int result=checkSong();
+        switch (result){
+            case SONG_SUCCESS:
+                //校验成功跳转页面
+                Toast.makeText(MainActivity.this, "恭喜你，奖励一头牛", Toast.LENGTH_SHORT).show();
+                for (int i=0;i<selected_word;i++){
+                    selects.get(i).tvSelected.setTextColor(Color.GREEN);
+                }
+                llSuccess.setVisibility(View.VISIBLE);
+                break;
+            case SONG_FAILL:
+                //校验失败已选文字闪烁，
+                Toast.makeText(MainActivity.this, "Sorry，今晚你得吃一头牛", Toast.LENGTH_SHORT).show();
+                for (int i=0;i<selected_word;i++){
+                    ValueAnimator colorAnim = ObjectAnimator.ofInt(selects.get(i).tvSelected, "textColor", Color.WHITE, Color.RED);
+                    colorAnim.setEvaluator(new ArgbEvaluator());
+                    colorAnim.setDuration(200);
+                    colorAnim.setRepeatCount(4);
+                    colorAnim.setRepeatMode(ValueAnimator.REVERSE);
+                    colorAnim.start();
+                }
+
+                break;
+            case SONG_UNKNOW:
+                //没有选择完成
+                Toast.makeText(MainActivity.this, "还没填完，加油哦", Toast.LENGTH_SHORT).show();
+                for (int i=0;i<selected_word;i++){
+                    selects.get(i).tvSelected.setTextColor(Color.WHITE);
+                }
+                break;
         }
-        super.onPause();
+    }
+
+    /**
+     * 处理删除按钮的逻辑
+     */
+    private void handleDelOperate() {
+        //弹出提示，如果确认删除执行删除操作
+        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+        dialog.setTitle("扣币提示").setMessage("排除一个待选文字将花费"+deleteScore+"金币，确认删除？");
+        dialog.setNegativeButton("算了", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+
+            }
+        });
+        dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                //点击确定后：
+                //      1：判断金币数量，如果金币数量少于应扣数量，提示
+                if (totalScore<deleteScore){
+                    Toast.makeText(MainActivity.this, "金币数量不足，请充值！", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+              //        2.判断删除结果
+                int result=deleteWord();
+                switch (result){
+                    case DELETE_SUCCESS:
+                        //      3.删除成功后扣除相应金币
+                        totalScore=totalScore-deleteScore;
+                        tvScore.setText(totalScore+"");
+                        break;
+                    case DELETE_FAILL:
+                        Toast.makeText(MainActivity.this, "正确答案就在眼前了，加油！", Toast.LENGTH_SHORT).show();
+                        break;
+                }
+            }
+        });
+        dialog.show();
+
+    }
+
+    /**
+     * 任意删除一个正确答案除外的文字
+     */
+    private int deleteWord() {
+
+        //3.从剩下的待选区域中随机生成一个随机数，将这个随机数对应的索引的按钮隐藏
+        Random random = new Random();
+        //如果待选框中全部是正确答案，直接返回删除失败
+        boolean isAllRight=true;
+        for (int i=0;i<datas.size();i++){
+            if (datas.get(i).isVisible&&!currentSong.songName.contains(datas.get(i).wordText)){
+                isAllRight=false;
+            }
+        }
+        if (isAllRight){
+            return DELETE_FAILL;
+        }
+
+        int num=random.nextInt(SELECTING_WORD);
+        while (true){
+            if (datas.get(num).isVisible&&!currentSong.songName.contains(datas.get(num).wordText)){
+                datas.get(num).isVisible=false;
+                adapter.notifyDataSetChanged();
+                return DELETE_SUCCESS;
+            }else {
+                num=random.nextInt(SELECTING_WORD);
+            }
+
+        }
+
+    }
+
+    /**
+     * 处理提示按钮操作
+     */
+    private void handleTipOperate() {
+        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+        dialog.setTitle("扣币提示").setMessage("提示操作将花费您"+tipScore+"金币，确认操作？");
+        dialog.setNegativeButton("算了", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+
+            }
+        });
+        dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                //点击确定后：
+                //      1：判断金币数量，如果金币数量少于应扣数量，提示
+                if (totalScore<tipScore){
+                    Toast.makeText(MainActivity.this, "金币数量不足，请充值！", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                //      2：判断提示操作，提示成功扣币
+                int result = tipWord();
+                switch (result){
+                    case TIP_SUCCESS:
+                        //      3.删除成功后扣除相应金币
+                        totalScore=totalScore-tipScore;
+                        tvScore.setText(totalScore+"");
+                        break;
+                    case TIP_FAILL:
+                        Toast.makeText(MainActivity.this, "再没有别的提示了", Toast.LENGTH_SHORT).show();
+                        break;
+                }
+            }
+        });
+        dialog.show();
+    }
+
+    /**
+     * 提示一个正确答案
+     * @return
+     */
+    private int tipWord() {
+        //将正确答案添加到指定位置
+        if (fillNum < selected_word) {
+            for (int i=0;i<selected_word;i++){
+                if (TextUtils.isEmpty(selects.get(i).wordText)){
+                    point=i;
+                    break;
+                }
+            }
+            String name=currentSong.getNameCharArray()[point]+"";
+            //将已选框中已经出现的文字隐藏
+            for (int i=0;i<selected_word;i++){
+                if (TextUtils.equals(selects.get(i).wordText,name)){
+                    selects.get(i).wordText="";
+                    fillNum--;
+                }
+            }
+
+            if (TextUtils.isEmpty(selects.get(point).wordText)){
+                selects.get(point).wordText=name;
+                selectedAdapter.notifyDataSetChanged();
+            }
+
+
+            //将正确答案所在的位置隐藏
+            int pos=-1;
+            for (int i=0;i<words.length;i++){
+                if (TextUtils.equals(words[i],name)){
+                    pos=i;
+                }
+            }
+            datas.get(pos).isVisible=false;
+            adapter.notifyDataSetChanged();
+
+            mapWord.put(point, datas.get(pos));
+            fillNum++;
+            validateSongs();
+            return TIP_SUCCESS;
+
+        }else {
+            return TIP_FAILL;
+        }
     }
 
     /**

@@ -80,4 +80,59 @@ public class WordUtil {
         }
         return temp;
     }
+
+    /**
+     * 冒泡排序算法进行倒序排列
+     * @param arr
+     */
+    public static void bubbleSort(int[] arr){
+        for (int i=0;i<arr.length-1;i++){
+            for (int j=i;j<arr.length-1-i;j++){
+                if (arr[j]<arr[j+1]){
+                    int temp = arr[j];
+                    arr[j]=arr[j+1];
+                    arr[j+1]=temp;
+                }
+            }
+        }
+    }
+
+    /**
+     * 选择排序进行倒序排列
+     * @param arr
+     */
+    public static void selectSort(int[] arr){
+        for(int i=0;i<arr.length-1;i++){
+            int min=i;
+            for(int j=i+1;j<arr.length;j++){
+                if(arr[min]>arr[j]){
+                    min=j;
+                }
+            }
+            int temp = arr[min];
+            arr[min] = arr[i];
+            arr[i] = temp;
+        }
+    }
+
+    /**
+     * 二分查找：根据关键字查找其所在的位置
+     * @param arr
+     * @param key
+     * @return
+     */
+    public static int binarySearch(int[] arr,int key){
+        int min=0,max=arr.length,mid;
+        while(min<=max){
+            mid = (min+max)>>>1;
+            if(key>arr[mid]){
+                min=mid+1;
+            }else if(key<arr[mid]){
+                max=mid-1;
+            }else{
+                return mid;
+            }
+        }
+        return -1;
+    }
 }
