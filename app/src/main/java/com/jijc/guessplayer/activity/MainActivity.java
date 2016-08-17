@@ -3,8 +3,8 @@ package com.jijc.guessplayer.activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.graphics.Color;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
@@ -22,19 +22,18 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.jijc.guessplayer.adapter.MyAdapter;
 import com.jijc.guessplayer.R;
+import com.jijc.guessplayer.adapter.MyAdapter;
 import com.jijc.guessplayer.bean.SongBean;
 import com.jijc.guessplayer.bean.Songs;
 import com.jijc.guessplayer.bean.WordBean;
+import com.jijc.guessplayer.dialog.SuccessDialog;
 import com.jijc.guessplayer.utils.WordUtil;
 import com.nineoldandroids.animation.ArgbEvaluator;
 import com.nineoldandroids.animation.ObjectAnimator;
 import com.nineoldandroids.animation.ValueAnimator;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
@@ -150,11 +149,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 selects.get(position).wordText = "";
                 selectedAdapter.notifyDataSetChanged();
                 WordBean wordBean = mapWord.get(position);//已选框文字原来的位置
-                wordBean.isVisible = true;
-                adapter.notifyDataSetChanged();
-                point=position;
-                fillNum--;
-                Log.i("jijinc", "---------------------fillNum=" + fillNum);
+                if (wordBean!=null){
+                    wordBean.isVisible = true;
+                    adapter.notifyDataSetChanged();
+                    point=position;
+                    fillNum--;
+                    Log.i("jijinc", "---------------------fillNum=" + fillNum);
+                }
             }
 
             @Override
@@ -278,7 +279,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 for (int i=0;i<selected_word;i++){
                     selects.get(i).tvSelected.setTextColor(Color.GREEN);
                 }
-                llSuccess.setVisibility(View.VISIBLE);
+//                llSuccess.setVisibility(View.VISIBLE);
+                SuccessDialog dialog = new SuccessDialog(this,R.layout.shadow_success);
+                dialog.show(getSupportFragmentManager(),"");
                 break;
             case SONG_FAILL:
                 //校验失败已选文字闪烁，
@@ -295,7 +298,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case SONG_UNKNOW:
                 //没有选择完成
-                Toast.makeText(MainActivity.this, "还没填完，加油哦", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(MainActivity.this, "还没填完，加油哦", Toast.LENGTH_SHORT).show();
                 for (int i=0;i<selected_word;i++){
                     selects.get(i).tvSelected.setTextColor(Color.WHITE);
                 }

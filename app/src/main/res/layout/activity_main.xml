@@ -6,6 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".activity.MainActivity">
     <LinearLayout
+        android:id="@+id/ll_total"
         android:layout_width="match_parent"
         android:orientation="vertical"
         android:background="@mipmap/index_background"
