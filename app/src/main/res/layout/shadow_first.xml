@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:id="@+id/rl_shadow"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+    <LinearLayout
+        android:layout_centerInParent="true"
+        android:layout_width="300dp"
+        android:orientation="vertical"
+        android:background="@drawable/bg_first_dialog"
+        android:gravity="center_horizontal"
+        android:layout_height="220dp">
+        <TextView
+            android:id="@+id/tv_next"
+            android:layout_width="30dp"
+            android:layout_gravity="right"
+            android:layout_marginRight="5dp"
+            android:layout_marginTop="5dp"
+            android:background="@mipmap/delete_icon"
+            android:layout_height="30dp"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:text="首次登录奖励"
+            android:textSize="28dp"
+            android:layout_marginTop="10dp"
+            android:textColor="@color/color_000000"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:text=" x 500"
+            android:textSize="22dp"
+            android:drawableLeft="@mipmap/game_coin_icon"
+            android:layout_marginTop="30dp"
+            android:textColor="#60b166"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:layout_width="260dp"
+            android:layout_marginTop="20dp"
+            android:text="首次登录游戏奖励金币500，该奖励长期有效，仅限第一次，赶紧开始你的游戏吧"
+            android:layout_height="wrap_content"/>
+    </LinearLayout>
+
+</RelativeLayout>

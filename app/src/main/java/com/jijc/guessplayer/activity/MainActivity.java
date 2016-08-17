@@ -29,8 +29,10 @@ import com.jijc.guessplayer.adapter.MyAdapter;
 import com.jijc.guessplayer.bean.SongBean;
 import com.jijc.guessplayer.bean.Songs;
 import com.jijc.guessplayer.bean.WordBean;
+import com.jijc.guessplayer.dialog.FirstDialog;
 import com.jijc.guessplayer.dialog.SuccessDialog;
 import com.jijc.guessplayer.utils.MyPlayer;
+import com.jijc.guessplayer.utils.ShareUtil;
 import com.jijc.guessplayer.utils.WordUtil;
 import com.nineoldandroids.animation.Animator;
 import com.nineoldandroids.animation.AnimatorSet;
@@ -56,18 +58,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private int fillNum; //已经填充的数量
     private int point;//已选框的指针（输入焦点所在的位置）
     private HashMap<Integer, WordBean> mapWord = new HashMap<>(); //存放已选区域的索引和待选区域的按钮以及对应关系
-    private int currentSongIndex=0;  //当前播放歌曲的索引，初始值0
+    private int currentSongIndex = 0;  //当前播放歌曲的索引，初始值0
     private SongBean currentSong; //当前播放的歌曲
     private int selected_word; //答案的文字个数
     private boolean isStart;
     private List<WordBean> datas;//待选文字集合
     private List<WordBean> selects;//已选文字集合
-    private int totalScore=Songs.TOTAL_SCORE;
+    private int totalScore;// = Songs.TOTAL_SCORE;
     private int deleteScore;
     private int tipScore;
     private String[] words; //随机排好序的数组
     private ArrayList<Integer> passedList = new ArrayList<>();//通关歌曲的集合
     private int TIME = 1700;//刷新后提示时间 3000-300
+    private static final String INDEX_KEY="current_index";
+    private static final String TOTAL_SCORE_KEY="total_score_key";
+    private static final String IS_FIRST="is_first";
 
     private CheckedTextView tvScore;
     private Button btnBack;
@@ -90,6 +95,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private TextView tvShare;
     private TextView tvLevel;
     private TextView tv_new_msg;
+    private boolean isFirst;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -130,15 +136,56 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      */
     private void initData() {
 
-        deleteScore=getResources().getInteger(R.integer.score_delete);
-        tipScore=getResources().getInteger(R.integer.score_tip);
+        deleteScore = getResources().getInteger(R.integer.score_delete);
+        tipScore = getResources().getInteger(R.integer.score_tip);
+
+        //读取历史数据
+        currentSongIndex=ShareUtil.getIntegerCommon(this,INDEX_KEY,0);
+        totalScore=ShareUtil.getIntegerCommon(this,TOTAL_SCORE_KEY,0);
+
+        isFirst = ShareUtil.getBooleanCommon(this, IS_FIRST,true);
+        if(isFirst){
+
+            FirstDialog dialog = new FirstDialog(this,R.layout.shadow_first);
+            dialog.setOnButtonClickListener(new FirstDialog.OnButtonClickListener() {
+                @Override
+                public void onShadowClick() {
+
+                }
+
+                @Override
+                public void onNextClick() {
+                    totalScore=500;
+                    ShareUtil.saveIntegerCommon(MainActivity.this,TOTAL_SCORE_KEY,500);
+                    ShareUtil.saveBooleanCommon(MainActivity.this,IS_FIRST,false);
+                    tv_new_msg.setText(" + " + 500);
+                    tvScore.setText(totalScore + "");
+                    tv_new_msg.setVisibility(View.VISIBLE);
+                    AnimatorSet set = new AnimatorSet();
+                    set.play(ObjectAnimator.ofFloat(tv_new_msg, "alpha", 0.5f, 1f));
+                    set.setDuration(300).start();
+
+                    handler.postDelayed(runnable, TIME); //隔TIME时间执行
+                    MyPlayer.getInstance().playSounds(MainActivity.this, Songs.SOUND_COIN);
+
+                    initAnim();
+                    playMusic();
+                }
+
+                @Override
+                public void onShareWXClick() {
+
+                }
+            });
+            dialog.show(getSupportFragmentManager(),"");
+        }
 
         currentSong = new SongBean();
         String[][] songs = Songs.SONGS;
         currentSong.fileName = songs[currentSongIndex][Songs.SONG_FILENAME];
         currentSong.songName = songs[currentSongIndex][Songs.SONG_SONGNAME];
-        currentSong.songScore=Integer.parseInt(songs[currentSongIndex][Songs.SONG_SCORE]);
-        currentSong.songIndex=currentSongIndex+1;
+        currentSong.songScore = Integer.parseInt(songs[currentSongIndex][Songs.SONG_SCORE]);
+        currentSong.songIndex = currentSongIndex + 1;
         //设置待选框个数
         selected_word = currentSong.getSongLength();
 
@@ -170,11 +217,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      */
     private void initListener() {
         //设置各种金币数量
-        tvScore.setText(totalScore+"");
-        tvDelete.setText(deleteScore+"");
-        tvTip.setText(tipScore+"");
+        tvScore.setText(totalScore + "");
+        tvDelete.setText(deleteScore + "");
+        tvTip.setText(tipScore + "");
         //设置关卡数
-        tvLevel.setText(currentSong.songIndex+"");
+        tvLevel.setText(currentSong.songIndex + "");
 
         adapter = new MyAdapter(this, datas, 0);
         selectedAdapter = new MyAdapter(this, selects, 1);
@@ -188,7 +235,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         adapter.setOnItemClickListener(new MyAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(final View view, final int position) {
-                MyPlayer.getInstance().playSounds(MainActivity.this,Songs.SOUND_ENTER);
+                MyPlayer.getInstance().playSounds(MainActivity.this, Songs.SOUND_ENTER);
                 Log.i("jijinc", "---------------------fillNum=" + fillNum);
                 if (fillNum < selected_word) {
                     datas.get(position).isVisible = false;
@@ -199,7 +246,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             selects.get(i).wordText = datas.get(position).wordText;
                             selectedAdapter.notifyDataSetChanged();
                             mapWord.put(i, datas.get(position));
-                            point=i+1;
+                            point = i + 1;
                             fillNum++;
                             break;
                         }
@@ -220,9 +267,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         selectedAdapter.setOnItemClickListener(new MyAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(final View view, final int position) {
-                MyPlayer.getInstance().playSounds(MainActivity.this,Songs.SOUND_ENTER);
-                for (int i=0;i<selected_word;i++){
-                    if (selects.get(i).tvSelected!=null){
+                MyPlayer.getInstance().playSounds(MainActivity.this, Songs.SOUND_ENTER);
+                for (int i = 0; i < selected_word; i++) {
+                    if (selects.get(i).tvSelected != null) {
                         selects.get(i).tvSelected.setTextColor(Color.WHITE);
                     }
                 }
@@ -230,10 +277,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 selects.get(position).wordText = "";
                 selectedAdapter.notifyDataSetChanged();
                 WordBean wordBean = mapWord.get(position);//已选框文字原来的位置
-                if (wordBean!=null){
+                if (wordBean != null) {
                     wordBean.isVisible = true;
                     adapter.notifyDataSetChanged();
-                    point=position;
+                    point = position;
                     fillNum--;
                     Log.i("jijinc", "---------------------fillNum=" + fillNum);
                 }
@@ -251,14 +298,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onResume();
         initData();
         initListener();
-        initAnim();
-        playMusic();
-        Log.i("jijinc","----------------onResume()");
+        if (!isFirst){
+            initAnim();
+            playMusic();
+        }
+
+        Log.i("jijinc", "----------------onResume()");
     }
 
     @Override
     protected void onPause() {
-        Log.i("jijinc","----------------onPause()");
+        Log.i("jijinc", "----------------onPause()");
         MyPlayer.getInstance().stop();
         if (ivPan != null) {
             ivPan.clearAnimation();
@@ -271,7 +321,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         int id = v.getId();
         switch (id) {
             case R.id.btn_back: //返回按键
-                MyPlayer.getInstance().playSounds(MainActivity.this,Songs.SOUND_ENTER);
+                MyPlayer.getInstance().playSounds(MainActivity.this, Songs.SOUND_ENTER);
                 finish();
                 break;
             case R.id.btn_play: //播放按钮
@@ -286,7 +336,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 handleTipOperate();
                 break;
             case R.id.tv_share: //分享
-                MyPlayer.getInstance().playSounds(MainActivity.this,Songs.SOUND_ENTER);
+                MyPlayer.getInstance().playSounds(MainActivity.this, Songs.SOUND_ENTER);
                 break;
 
         }
@@ -301,7 +351,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } else {
             btnPlay.setVisibility(View.GONE);
             barInAnim();
-            MyPlayer.getInstance().play(this,currentSong.fileName);
+            MyPlayer.getInstance().play(this, currentSong.fileName);
         }
     }
 
@@ -309,34 +359,36 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      * 检查歌曲结果
      */
     private void validateSongs() {
-        int result=checkSong();
-        switch (result){
+        int result = checkSong();
+        switch (result) {
             case SONG_SUCCESS:
                 //校验成功跳转页面
 //                Toast.makeText(MainActivity.this, "恭喜你，奖励一头牛", Toast.LENGTH_SHORT).show();
-                for (int i=0;i<selected_word;i++){
+                for (int i = 0; i < selected_word; i++) {
                     selects.get(i).tvSelected.setTextColor(Color.GREEN);
                 }
                 MyPlayer.getInstance().stop();
                 barOutAnim();
-                if (currentSongIndex<Songs.TOTAL_SONGS_COUNT-1){
-                    SuccessDialog dialog = new SuccessDialog(this,R.layout.shadow_success,currentSong);
+                if (currentSongIndex < Songs.TOTAL_SONGS_COUNT - 1) {
+                    SuccessDialog dialog = new SuccessDialog(this, R.layout.shadow_success, currentSong);
                     dialog.setOnButtonClickListener(new SuccessDialog.OnButtonClickListener() {
                         @Override
                         public void onShadowClick() {
-                            fillNum=0;
-                            if (passedList!=null){
-                                if (!passedList.contains(currentSongIndex)){
-                                    totalScore+=currentSong.songScore;
+                            fillNum = 0;
+                            if (passedList != null) {
+                                if (!passedList.contains(currentSongIndex)) {
+                                    totalScore += currentSong.songScore;
+                                    ShareUtil.saveIntegerCommon(MainActivity.this,TOTAL_SCORE_KEY,totalScore);
+                                    ShareUtil.saveIntegerCommon(MainActivity.this,INDEX_KEY,currentSongIndex+1);
                                     passedList.add(currentSongIndex);
-                                    tv_new_msg.setText(" + "+currentSong.songScore);
+                                    tv_new_msg.setText(" + " + currentSong.songScore);
                                     tv_new_msg.setVisibility(View.VISIBLE);
                                     AnimatorSet set = new AnimatorSet();
                                     set.play(ObjectAnimator.ofFloat(tv_new_msg, "alpha", 0.5f, 1f));
                                     set.setDuration(300).start();
 
                                     handler.postDelayed(runnable, TIME); //隔TIME时间执行
-                                    MyPlayer.getInstance().playSounds(MainActivity.this,Songs.SOUND_COIN);
+                                    MyPlayer.getInstance().playSounds(MainActivity.this, Songs.SOUND_COIN);
                                 }
                             }
                             MainActivity.this.onResume();
@@ -344,63 +396,67 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                         @Override
                         public void onNextClick() {
-                            if (passedList!=null){
-                                if (!passedList.contains(currentSongIndex)){
-                                    totalScore+=currentSong.songScore;
+                            if (passedList != null) {
+                                if (!passedList.contains(currentSongIndex)) {
+                                    totalScore += currentSong.songScore;
+                                    ShareUtil.saveIntegerCommon(MainActivity.this,TOTAL_SCORE_KEY,totalScore);
                                     passedList.add(currentSongIndex);
-                                    tv_new_msg.setText(" + "+currentSong.songScore);
+                                    tv_new_msg.setText(" + " + currentSong.songScore);
                                     tv_new_msg.setVisibility(View.VISIBLE);
                                     AnimatorSet set = new AnimatorSet();
                                     set.play(ObjectAnimator.ofFloat(tv_new_msg, "alpha", 0.5f, 1f));
                                     set.setDuration(300).start();
 
                                     handler.postDelayed(runnable, TIME); //隔TIME时间执行
-                                    MyPlayer.getInstance().playSounds(MainActivity.this,Songs.SOUND_COIN);
+                                    MyPlayer.getInstance().playSounds(MainActivity.this, Songs.SOUND_COIN);
                                 }
                             }
 
                             currentSongIndex++;
-                            fillNum=0;
+                            ShareUtil.saveIntegerCommon(MainActivity.this,INDEX_KEY,currentSongIndex);
+                            fillNum = 0;
                             MainActivity.this.onResume();
                         }
 
                         @Override
                         public void onShareWXClick() {
-                            if (passedList!=null){
-                                if (!passedList.contains(currentSongIndex)){
-                                    totalScore+=currentSong.songScore;
+                            if (passedList != null) {
+                                if (!passedList.contains(currentSongIndex)) {
+                                    totalScore += currentSong.songScore;
+                                    ShareUtil.saveIntegerCommon(MainActivity.this,TOTAL_SCORE_KEY,totalScore);
                                     passedList.add(currentSongIndex);
-                                    tv_new_msg.setText(" + "+currentSong.songScore);
+                                    tv_new_msg.setText(" + " + currentSong.songScore);
                                     tv_new_msg.setVisibility(View.VISIBLE);
                                     AnimatorSet set = new AnimatorSet();
                                     set.play(ObjectAnimator.ofFloat(tv_new_msg, "alpha", 0.5f, 1f));
                                     set.setDuration(300).start();
 
                                     handler.postDelayed(runnable, TIME); //隔TIME时间执行
-                                    MyPlayer.getInstance().playSounds(MainActivity.this,Songs.SOUND_COIN);
+                                    MyPlayer.getInstance().playSounds(MainActivity.this, Songs.SOUND_COIN);
                                 }
                             }
-                            fillNum=0;
+                            fillNum = 0;
 //                        MainActivity.this.onResume();
                         }
                     });
-                    dialog.show(getSupportFragmentManager(),"");
-                }else {
-                    if (passedList!=null){
-                        if (!passedList.contains(currentSongIndex)){
-                            totalScore+=currentSong.songScore;
+                    dialog.show(getSupportFragmentManager(), "");
+                } else {
+                    if (passedList != null) {
+                        if (!passedList.contains(currentSongIndex)) {
+                            totalScore += currentSong.songScore;
                             passedList.add(currentSongIndex);
                         }
                     }
-                    fillNum=0;
-                    startActivity(new Intent(this,PassedActivity.class));
+                    fillNum = 0;
+                    ShareUtil.saveIntegerCommon(MainActivity.this,INDEX_KEY,Songs.TOTAL_SONGS_COUNT-1);
+                    startActivity(new Intent(this, PassedActivity.class));
                 }
 
                 break;
             case SONG_FAILL:
                 //校验失败已选文字闪烁，
 //                Toast.makeText(MainActivity.this, "Sorry，今晚你得吃一头牛", Toast.LENGTH_SHORT).show();
-                for (int i=0;i<selected_word;i++){
+                for (int i = 0; i < selected_word; i++) {
                     ValueAnimator colorAnim = ObjectAnimator.ofInt(selects.get(i).tvSelected, "textColor", Color.WHITE, Color.RED);
                     colorAnim.setEvaluator(new ArgbEvaluator());
                     colorAnim.setDuration(200);
@@ -413,7 +469,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case SONG_UNKNOW:
                 //没有选择完成
 //                Toast.makeText(MainActivity.this, "还没填完，加油哦", Toast.LENGTH_SHORT).show();
-                for (int i=0;i<selected_word;i++){
+                for (int i = 0; i < selected_word; i++) {
                     selects.get(i).tvSelected.setTextColor(Color.WHITE);
                 }
                 break;
@@ -426,12 +482,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void handleDelOperate() {
         //弹出提示，如果确认删除执行删除操作
         AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-        dialog.setTitle("扣币提示").setMessage("排除一个待选文字将花费"+deleteScore+"金币，确认删除？");
+        dialog.setTitle("扣币提示").setMessage("排除一个待选文字将花费" + deleteScore + "金币，确认删除？");
         dialog.setNegativeButton("算了", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.dismiss();
-                MyPlayer.getInstance().playSounds(MainActivity.this,Songs.SOUND_CANCEL);
+                MyPlayer.getInstance().playSounds(MainActivity.this, Songs.SOUND_CANCEL);
             }
         });
         dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
@@ -439,21 +495,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void onClick(DialogInterface dialog, int which) {
                 //点击确定后：
                 //      1：判断金币数量，如果金币数量少于应扣数量，提示
-                if (totalScore<deleteScore){
+                if (totalScore < deleteScore) {
                     Toast.makeText(MainActivity.this, "金币数量不足，请充值！", Toast.LENGTH_SHORT).show();
                     return;
                 }
-              //        2.判断删除结果
-                int result=deleteWord();
-                switch (result){
+                //        2.判断删除结果
+                int result = deleteWord();
+                switch (result) {
                     case DELETE_SUCCESS:
                         //      3.删除成功后扣除相应金币
-                        totalScore=totalScore-deleteScore;
-                        tvScore.setText(totalScore+"");
+                        totalScore = totalScore - deleteScore;
+                        ShareUtil.saveIntegerCommon(MainActivity.this,TOTAL_SCORE_KEY,totalScore);
+                        tvScore.setText(totalScore + "");
 
-                        MyPlayer.getInstance().playSounds(MainActivity.this,Songs.SOUND_COIN);
+                        MyPlayer.getInstance().playSounds(MainActivity.this, Songs.SOUND_COIN);
 
-                        tv_new_msg.setText(" - "+deleteScore);
+                        tv_new_msg.setText(" - " + deleteScore);
                         tv_new_msg.setVisibility(View.VISIBLE);
                         AnimatorSet set = new AnimatorSet();
                         set.play(ObjectAnimator.ofFloat(tv_new_msg, "alpha", 0.5f, 1f));
@@ -479,24 +536,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //3.从剩下的待选区域中随机生成一个随机数，将这个随机数对应的索引的按钮隐藏
         Random random = new Random();
         //如果待选框中全部是正确答案，直接返回删除失败
-        boolean isAllRight=true;
-        for (int i=0;i<datas.size();i++){
-            if (datas.get(i).isVisible&&!currentSong.songName.contains(datas.get(i).wordText)){
-                isAllRight=false;
+        boolean isAllRight = true;
+        for (int i = 0; i < datas.size(); i++) {
+            if (datas.get(i).isVisible && !currentSong.songName.contains(datas.get(i).wordText)) {
+                isAllRight = false;
             }
         }
-        if (isAllRight){
+        if (isAllRight) {
             return DELETE_FAILL;
         }
 
-        int num=random.nextInt(SELECTING_WORD);
-        while (true){
-            if (datas.get(num).isVisible&&!currentSong.songName.contains(datas.get(num).wordText)){
-                datas.get(num).isVisible=false;
+        int num = random.nextInt(SELECTING_WORD);
+        while (true) {
+            if (datas.get(num).isVisible && !currentSong.songName.contains(datas.get(num).wordText)) {
+                datas.get(num).isVisible = false;
                 adapter.notifyDataSetChanged();
                 return DELETE_SUCCESS;
-            }else {
-                num=random.nextInt(SELECTING_WORD);
+            } else {
+                num = random.nextInt(SELECTING_WORD);
             }
 
         }
@@ -508,12 +565,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      */
     private void handleTipOperate() {
         AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-        dialog.setTitle("扣币提示").setMessage("提示操作将花费您"+tipScore+"金币，确认操作？");
+        dialog.setTitle("扣币提示").setMessage("提示操作将花费您" + tipScore + "金币，确认操作？");
         dialog.setNegativeButton("算了", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.dismiss();
-                MyPlayer.getInstance().playSounds(MainActivity.this,Songs.SOUND_CANCEL);
+                MyPlayer.getInstance().playSounds(MainActivity.this, Songs.SOUND_CANCEL);
             }
         });
         dialog.setPositiveButton("确定", new DialogInterface.OnClickListener() {
@@ -521,21 +578,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void onClick(DialogInterface dialog, int which) {
                 //点击确定后：
                 //      1：判断金币数量，如果金币数量少于应扣数量，提示
-                if (totalScore<tipScore){
+                if (totalScore < tipScore) {
                     Toast.makeText(MainActivity.this, "金币数量不足，请充值！", Toast.LENGTH_SHORT).show();
                     return;
                 }
                 //      2：判断提示操作，提示成功扣币
                 int result = tipWord();
-                switch (result){
+                switch (result) {
                     case TIP_SUCCESS:
                         //      3.删除成功后扣除相应金币
-                        totalScore=totalScore-tipScore;
-                        tvScore.setText(totalScore+"");
+                        totalScore = totalScore - tipScore;
+                        ShareUtil.saveIntegerCommon(MainActivity.this,TOTAL_SCORE_KEY,totalScore);
+                        tvScore.setText(totalScore + "");
 
-                        MyPlayer.getInstance().playSounds(MainActivity.this,Songs.SOUND_COIN);
+                        MyPlayer.getInstance().playSounds(MainActivity.this, Songs.SOUND_COIN);
 
-                        tv_new_msg.setText(" - "+tipScore);
+                        tv_new_msg.setText(" - " + tipScore);
                         tv_new_msg.setVisibility(View.VISIBLE);
                         AnimatorSet set = new AnimatorSet();
                         set.play(ObjectAnimator.ofFloat(tv_new_msg, "alpha", 0.5f, 1f));
@@ -554,40 +612,41 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     /**
      * 提示一个正确答案
+     *
      * @return
      */
     private int tipWord() {
         //将正确答案添加到指定位置
         if (fillNum < selected_word) {
-            for (int i=0;i<selected_word;i++){
-                if (TextUtils.isEmpty(selects.get(i).wordText)){
-                    point=i;
+            for (int i = 0; i < selected_word; i++) {
+                if (TextUtils.isEmpty(selects.get(i).wordText)) {
+                    point = i;
                     break;
                 }
             }
-            String name=currentSong.getNameCharArray()[point]+"";
+            String name = currentSong.getNameCharArray()[point] + "";
             //将已选框中已经出现的文字隐藏
-            for (int i=0;i<selected_word;i++){
-                if (TextUtils.equals(selects.get(i).wordText,name)){
-                    selects.get(i).wordText="";
+            for (int i = 0; i < selected_word; i++) {
+                if (TextUtils.equals(selects.get(i).wordText, name)) {
+                    selects.get(i).wordText = "";
                     fillNum--;
                 }
             }
 
-            if (TextUtils.isEmpty(selects.get(point).wordText)){
-                selects.get(point).wordText=name;
+            if (TextUtils.isEmpty(selects.get(point).wordText)) {
+                selects.get(point).wordText = name;
                 selectedAdapter.notifyDataSetChanged();
             }
 
 
             //将正确答案所在的位置隐藏
-            int pos=-1;
-            for (int i=0;i<words.length;i++){
-                if (TextUtils.equals(words[i],name)){
-                    pos=i;
+            int pos = -1;
+            for (int i = 0; i < words.length; i++) {
+                if (TextUtils.equals(words[i], name)) {
+                    pos = i;
                 }
             }
-            datas.get(pos).isVisible=false;
+            datas.get(pos).isVisible = false;
             adapter.notifyDataSetChanged();
 
             mapWord.put(point, datas.get(pos));
@@ -595,7 +654,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             validateSongs();
             return TIP_SUCCESS;
 
-        }else {
+        } else {
             return TIP_FAILL;
         }
     }
