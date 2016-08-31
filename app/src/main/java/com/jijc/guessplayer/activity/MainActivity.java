@@ -45,6 +45,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
+import cn.sharesdk.framework.ShareSDK;
+import cn.sharesdk.onekeyshare.OnekeyShare;
+
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static final int SELECTING_WORD = 24; //待选文字区域文字个数
@@ -101,6 +104,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        ShareSDK.initSDK(this,"16426d822e60b");
         initView();
 
     }
@@ -235,9 +239,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         adapter.setOnItemClickListener(new MyAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(final View view, final int position) {
-                MyPlayer.getInstance().playSounds(MainActivity.this, Songs.SOUND_ENTER);
                 Log.i("jijinc", "---------------------fillNum=" + fillNum);
                 if (fillNum < selected_word) {
+                    MyPlayer.getInstance().playSounds(MainActivity.this, Songs.SOUND_ENTER);
                     datas.get(position).isVisible = false;
                     adapter.notifyDataSetChanged();
 
@@ -337,6 +341,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.tv_share: //分享
                 MyPlayer.getInstance().playSounds(MainActivity.this, Songs.SOUND_ENTER);
+                showShare();
                 break;
 
         }
@@ -455,7 +460,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case SONG_FAILL:
                 //校验失败已选文字闪烁，
-//                Toast.makeText(MainActivity.this, "Sorry，今晚你得吃一头牛", Toast.LENGTH_SHORT).show();
+//
                 for (int i = 0; i < selected_word; i++) {
                     ValueAnimator colorAnim = ObjectAnimator.ofInt(selects.get(i).tvSelected, "textColor", Color.WHITE, Color.RED);
                     colorAnim.setEvaluator(new ArgbEvaluator());
@@ -762,6 +767,34 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             }
         });
+    }
+
+    private void showShare() {
+        ShareSDK.initSDK(this);
+        OnekeyShare oks = new OnekeyShare();
+        //关闭sso授权
+        oks.disableSSOWhenAuthorize();
+
+        // title标题，印象笔记、邮箱、信息、微信、人人网和QQ空间等使用
+        oks.setTitle("星际猜歌");
+        // titleUrl是标题的网络链接，QQ和QQ空间等使用
+        oks.setTitleUrl("https://github.com/jijinchao2014/GuessPlayer");
+        // text是分享文本，所有平台都需要这个字段
+        oks.setText("星际猜歌是一款好玩的游戏，赶快加入吧！");
+        oks.setImageUrl("http://file.bbtree.com/group1/M00/89/17/CqigdVT7DeaAHGyyAAB1uhG0SJQ619.jpg");
+        // imagePath是图片的本地路径，Linked-In以外的平台都支持此参数
+        //oks.setImagePath("/sdcard/test.jpg");//确保SDcard下面存在此张图片
+        // url仅在微信（包括好友和朋友圈）中使用
+        oks.setUrl("http://www.bbtree.com");
+        // comment是我对这条分享的评论，仅在人人网和QQ空间使用
+        oks.setComment("星际猜歌是一款好玩的游戏，赶快加入吧！");
+        // site是分享此内容的网站名称，仅在QQ空间使用
+        oks.setSite(getString(R.string.app_name));
+        // siteUrl是分享此内容的网站地址，仅在QQ空间使用
+        oks.setSiteUrl("https://github.com/jijinchao2014/GuessPlayer");
+
+// 启动分享GUI
+        oks.show(this);
     }
 
     Handler handler = new Handler();
